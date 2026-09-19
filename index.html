@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Project Management Lab V4.2.2</title>
+<title>Project Management Lab V4.2.3</title>
 <style>
 :root{
   --bg:#f4f7fb;
@@ -296,9 +296,32 @@ input,select{
   padding:14px;border-top:1px solid var(--line);background:#fbfcfe
 }
 .raci-review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.raci-review-card{padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.raci-review-card{
+  padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;
+  transition:background .15s ease,border-color .15s ease
+}
 .raci-review-card strong{display:block;font-size:13px;margin-bottom:4px}
-.raci-review-card span{font-size:11px;color:#667085}
+.raci-review-card span{font-size:11px}
+.raci-review-card.status-good{
+  background:#dcfae6;border-color:#6ce9a6;color:#05603a
+}
+.raci-review-card.status-good strong,
+.raci-review-card.status-good span{color:#05603a}
+.raci-review-card.status-warn{
+  background:#fff3d6;border-color:#fec84b;color:#93370d
+}
+.raci-review-card.status-warn strong,
+.raci-review-card.status-warn span{color:#93370d}
+.raci-review-card.status-bad{
+  background:#fee4e2;border-color:#fda29b;color:#912018
+}
+.raci-review-card.status-bad strong,
+.raci-review-card.status-bad span{color:#912018}
+.raci-review-card.status-neutral{
+  background:#f2f4f7;border-color:#d0d5dd;color:#475467
+}
+.raci-review-card.status-neutral strong,
+.raci-review-card.status-neutral span{color:#475467}
 .raci-legend{display:flex;gap:8px;flex-wrap:wrap;padding:11px 14px;border-top:1px solid var(--line)}
 .raci-legend span{
   display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:5px 8px;
@@ -789,6 +812,17 @@ function renderRaci(source=raciSource){
   const project=state[source];
   const raci=state.raci[source];
   const stats=getRaciStats(source);
+  const taskCount=project.tasks.length;
+
+  const coverageStatus=(covered)=>{
+    if(taskCount===0) return "status-neutral";
+    if(covered===taskCount) return "status-good";
+    if(covered===0) return "status-bad";
+    return "status-warn";
+  };
+  const responsibleStatus=coverageStatus(stats.withR);
+  const accountableStatus=coverageStatus(stats.withA);
+  const multiAStatus=taskCount===0 ? "status-neutral" : (stats.multiA===0 ? "status-good" : "status-bad");
 
   const rows=project.tasks.length ? project.tasks.map(task=>{
     const finish=task.start+task.duration-1;
@@ -894,15 +928,15 @@ function renderRaci(source=raciSource){
         <div class="raci-review">
           <div class="section-title"><h3>Matrix Review</h3><span style="font-size:11px;color:#98a2b3">Guidance only</span></div>
           <div class="raci-review-grid">
-            <div class="raci-review-card">
+            <div class="raci-review-card ${responsibleStatus}">
               <strong>Responsible coverage</strong>
               <span>${stats.withR}/${project.tasks.length} activities have at least one R.</span>
             </div>
-            <div class="raci-review-card">
+            <div class="raci-review-card ${accountableStatus}">
               <strong>Accountability coverage</strong>
               <span>${stats.withA}/${project.tasks.length} activities have at least one A.</span>
             </div>
-            <div class="raci-review-card">
+            <div class="raci-review-card ${multiAStatus}">
               <strong>Multiple A check</strong>
               <span>${stats.multiA===0?"No activity has multiple Accountable assignments.":stats.multiA+" activit"+(stats.multiA===1?"y has":"ies have")+" multiple A assignments."}</span>
             </div>
