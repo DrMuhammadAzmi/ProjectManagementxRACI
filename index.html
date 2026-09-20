@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Project Management Lab V4.2.3</title>
+<title>Project Management Lab V4.2.6</title>
 <style>
 :root{
   --bg:#f4f7fb;
@@ -79,6 +79,7 @@ button{cursor:pointer}
 .small-btn{
   border:0;border-radius:8px;padding:6px 8px;background:var(--accent2);color:var(--accent);font-size:12px;font-weight:800
 }
+.small-btn:disabled{opacity:.35;cursor:not-allowed}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 label{font-size:11px;color:#667085;font-weight:700}
 input,select{
@@ -164,11 +165,24 @@ input,select{
   position:absolute;top:50%;width:16px;height:16px;border-radius:50%;
   border:2px solid #fff;background:#13254e;transform:translateY(-50%);
   box-shadow:0 0 0 2px rgba(49,87,213,.25);z-index:14;
-  cursor:crosshair;padding:0
+  cursor:crosshair;padding:0;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .12s ease,visibility .12s ease,background .12s ease,border-color .12s ease
 }
 .connector.start{left:-9px}
 .connector.finish{right:-9px}
-.connector:hover,.connector.active{background:#fff;border-color:#3157d5;box-shadow:0 0 0 3px rgba(49,87,213,.25)}
+
+/* Normal mode: show connection dots only for the task under the cursor.
+   Connection mode: keep ALL destination dots visible while dragging so the user can drop reliably. */
+.task-bar:hover .connector,
+.task-bar:focus-within .connector,
+.connector.active,
+.timeline.connecting-active .connector{
+  opacity:1;visibility:visible;pointer-events:auto
+}
+.connector:hover,.connector.active{
+  background:#fff;border-color:#3157d5;box-shadow:0 0 0 3px rgba(49,87,213,.25)
+}
 .connector-label{
   position:absolute;top:-25px;background:#101828;color:#fff;border-radius:6px;
   padding:3px 6px;font-size:9px;font-weight:800;white-space:nowrap;display:none;
@@ -176,7 +190,8 @@ input,select{
 }
 .connector.start .connector-label{left:-3px}
 .connector.finish .connector-label{right:-3px}
-.connector:hover .connector-label{display:block}
+.connector:hover .connector-label,
+.connector:focus .connector-label{display:block}
 .connect-preview{
   fill:none;stroke:#3157d5;stroke-width:2.5;stroke-dasharray:5 4;
   vector-effect:non-scaling-stroke;pointer-events:none
@@ -343,11 +358,66 @@ input,select{
 
 /* RACI print pages */
 @media print{
-  .print-raci{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8px}
-  .print-raci th,.print-raci td{border:1px solid #cfd7e6;padding:4px 5px;text-align:center}
-  .print-raci th{background:#f8fafc;font-weight:800}
+  .print-raci{
+    width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;
+    font-size:8px;border:1px solid #cfd7e6;border-radius:8px;overflow:hidden
+  }
+  .print-raci th,.print-raci td{
+    border-right:1px solid #d0d5dd;border-bottom:1px solid #d0d5dd;
+    padding:5px 6px;text-align:center
+  }
+  .print-raci tr:last-child td{border-bottom:0}
+  .print-raci th:last-child,.print-raci td:last-child{border-right:0}
+  .print-raci th{
+    background:#13254e!important;color:#fff!important;font-weight:800;font-size:8.5px
+  }
   .print-raci th:first-child,.print-raci td:first-child{text-align:left;width:31%}
-  .print-raci .raci-val{font-weight:900;font-size:9px}
+  .print-raci td:first-child{
+    background:#f8fafc!important;color:#172033!important;font-weight:700
+  }
+  .print-raci .raci-val{font-weight:900;font-size:10px}
+  .print-raci .raci-val.r-R{
+    background:#e0e7ff!important;color:#2748c7!important
+  }
+  .print-raci .raci-val.r-A{
+    background:#d1fadf!important;color:#067647!important
+  }
+  .print-raci .raci-val.r-C{
+    background:#ffead5!important;color:#b54708!important
+  }
+  .print-raci .raci-val.r-I{
+    background:#eaecf0!important;color:#475467!important
+  }
+  .print-raci .raci-val.r-empty{
+    background:#fff!important;color:#98a2b3!important
+  }
+  .print-raci-legend{
+    display:flex;gap:7px;flex-wrap:wrap;margin-top:7px
+  }
+  .print-raci-chip{
+    display:inline-flex;align-items:center;gap:5px;border:1px solid #d0d5dd;
+    border-radius:999px;padding:4px 7px;font-size:7.5px;background:#fff!important
+  }
+  .print-raci-chip b{
+    min-width:19px;height:19px;border-radius:999px;display:inline-flex;
+    align-items:center;justify-content:center;font-size:8px
+  }
+  .print-raci-chip.R b{background:#e0e7ff!important;color:#2748c7!important}
+  .print-raci-chip.A b{background:#d1fadf!important;color:#067647!important}
+  .print-raci-chip.C b{background:#ffead5!important;color:#b54708!important}
+  .print-raci-chip.I b{background:#eaecf0!important;color:#475467!important}
+  .print-raci-summary{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:7px
+  }
+  .print-raci-status{
+    border-radius:7px;padding:6px 8px;border:1px solid #d0d5dd;
+    font-size:7.5px;line-height:1.3
+  }
+  .print-raci-status strong{display:block;font-size:8px;margin-bottom:2px}
+  .print-raci-status.good{background:#dcfae6!important;border-color:#6ce9a6!important;color:#05603a!important}
+  .print-raci-status.warn{background:#fff3d6!important;border-color:#fec84b!important;color:#93370d!important}
+  .print-raci-status.bad{background:#fee4e2!important;border-color:#fda29b!important;color:#912018!important}
+  .print-raci-status.neutral{background:#f2f4f7!important;border-color:#d0d5dd!important;color:#475467!important}
 }
 
 /* Dedicated print report (V4.1) */
@@ -446,9 +516,8 @@ input,select{
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="seminar">1. University Seminar Exercise</button>
-    <button class="tab" data-tab="lab">2. General PM Lab</button>
-    <button class="tab" data-tab="raci">3. RACI Matrix</button>
+    <button class="tab active" data-tab="gantt">1. Gantt Chart</button>
+    <button class="tab" data-tab="raci">2. RACI Matrix</button>
   </nav>
 
   <section id="seminar" class="tab-pane active"></section>
@@ -556,7 +625,7 @@ const defaultSeminarTasks = [
 
 const state = {
   seminar: {
-    title:"University Seminar Project",
+    title:"Sample : University Seminar Program.",
     objective:"Organise a professional university seminar.",
     deadline:"8 Weeks",
     weeks:8,
@@ -597,7 +666,8 @@ const state = {
   }
 };
 
-let currentTab = "seminar";
+let currentTab = "gantt";
+let ganttSource = "seminar";
 let lastProjectTab = "seminar";
 let raciSource = "seminar";
 let dragInfo = null;
@@ -616,16 +686,37 @@ function uid(prefix="t"){ return prefix + Math.random().toString(36).slice(2,9);
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
 
 function setTab(tab){
-  if(tab==="seminar" || tab==="lab"){
-    lastProjectTab=tab;
-    raciSource=tab;
-  }
   currentTab = tab;
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
-  document.querySelectorAll(".tab-pane").forEach(p=>p.classList.toggle("active", p.id===tab));
-  if(tab==="raci") renderRaci(raciSource);
-  else render(tab);
+
+  if(tab==="raci"){
+    document.getElementById("seminar").classList.remove("active");
+    document.getElementById("lab").classList.remove("active");
+    document.getElementById("raci").classList.add("active");
+    renderRaci(raciSource);
+    return;
+  }
+
+  document.getElementById("raci").classList.remove("active");
+  document.getElementById("seminar").classList.toggle("active", ganttSource==="seminar");
+  document.getElementById("lab").classList.toggle("active", ganttSource==="lab");
+  render(ganttSource);
 }
+
+function setGanttSource(source){
+  if(source!=="seminar" && source!=="lab") return;
+  ganttSource=source;
+  lastProjectTab=source;
+  raciSource=source;
+
+  if(currentTab!=="gantt") currentTab="gantt";
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active", b.dataset.tab==="gantt"));
+  document.getElementById("raci").classList.remove("active");
+  document.getElementById("seminar").classList.toggle("active", source==="seminar");
+  document.getElementById("lab").classList.toggle("active", source==="lab");
+  render(source);
+}
+
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>setTab(btn.dataset.tab)));
 
 
@@ -862,14 +953,14 @@ function renderRaci(source=raciSource){
         <div class="input-group">
           <label>Project source</label>
           <select onchange="setRaciSource(this.value)">
-            <option value="seminar" ${source==="seminar"?"selected":""}>University Seminar Exercise</option>
-            <option value="lab" ${source==="lab"?"selected":""}>General PM Lab</option>
+            <option value="seminar" ${source==="seminar"?"selected":""}>Sample : University Seminar Program.</option>
+            <option value="lab" ${source==="lab"?"selected":""}>${escapeHtml((state.lab.title||"").trim() || "My Project")}</option>
           </select>
         </div>
 
         <div class="raci-sync">
           <strong>Automatic task sync</strong><br>
-          Activities are read directly from the selected project. Add or rename a task in the PM Lab and the RACI matrix updates automatically. Existing RACI assignments stay attached to the task.
+          Activities are read directly from the selected project. Add, rename or reorder a task in My Project and the RACI matrix updates automatically. Existing RACI assignments stay attached to the task.
         </div>
 
         <div class="section-title"><h3>Project Roles</h3><span style="font-size:11px;color:#98a2b3">${raci.roles.length}</span></div>
@@ -1046,8 +1137,16 @@ function render(tab){
     </div>
     <div class="grid">
       <aside class="panel sidebar">
+        <div class="input-group">
+          <label>Project source</label>
+          <select onchange="setGanttSource(this.value)">
+            <option value="seminar" ${tab==="seminar"?"selected":""}>Sample : University Seminar Program.</option>
+            <option value="lab" ${tab==="lab"?"selected":""}>${escapeHtml((state.lab.title||"").trim() || "My Project")}</option>
+          </select>
+        </div>
+
         <div class="project-card">
-          <h2>${escapeHtml(project.title)}</h2>
+          <h2>${tab==="seminar" ? "Sample : University Seminar Program." : escapeHtml(project.title || "My Project")}</h2>
           <div class="meta">
             <div><strong>Objective:</strong> ${escapeHtml(project.objective)}</div>
             <div><strong>Time scale:</strong> Week 1 to Week ${weeks}</div>
@@ -1211,6 +1310,8 @@ function taskRow(tab,t){
         </div>
         <div style="margin-top:6px">
           <button class="small-btn" onclick="openConnectModal('${tab}','${t.id}')">+ Connect</button>
+          <button class="small-btn" style="margin-left:3px" title="Move activity up" onclick="moveTask('${tab}','${t.id}',-1)" ${state[tab].tasks.filter(x=>x.placed).findIndex(x=>x.id===t.id)===0?"disabled":""}>↑</button>
+          <button class="small-btn" style="margin-left:3px" title="Move activity down" onclick="moveTask('${tab}','${t.id}',1)" ${state[tab].tasks.filter(x=>x.placed).findIndex(x=>x.id===t.id)===state[tab].tasks.filter(x=>x.placed).length-1?"disabled":""}>↓</button>
           <button class="small-btn" style="margin-left:3px" onclick="openTaskModal('${tab}','${t.id}')">Edit</button>
           <button class="small-btn" style="margin-left:3px;background:#fff1f0;color:#b42318" onclick="unplaceTask('${tab}','${t.id}')">Remove</button>
         </div>
@@ -1342,6 +1443,27 @@ function placeTask(tab,id){
   const weeks=state[tab].weeks||8;
   t.start=clamp(t.start||1,1,weeks);
   t.duration=clamp(t.duration||1,1,weeks-t.start+1);
+  render(tab);
+}
+
+function moveTask(tab,id,direction){
+  const project=state[tab];
+  const placedIndexes=project.tasks
+    .map((task,index)=>task.placed ? index : -1)
+    .filter(index=>index>=0);
+
+  const currentArrayIndex=project.tasks.findIndex(task=>task.id===id);
+  const visibleIndex=placedIndexes.indexOf(currentArrayIndex);
+  if(visibleIndex<0) return;
+
+  const targetVisibleIndex=visibleIndex+direction;
+  if(targetVisibleIndex<0 || targetVisibleIndex>=placedIndexes.length) return;
+
+  const targetArrayIndex=placedIndexes[targetVisibleIndex];
+  const temp=project.tasks[currentArrayIndex];
+  project.tasks[currentArrayIndex]=project.tasks[targetArrayIndex];
+  project.tasks[targetArrayIndex]=temp;
+
   render(tab);
 }
 
@@ -1486,6 +1608,9 @@ function clearConnectPreview(tab){
 }
 
 function bindBars(tab){
+  const root=document.getElementById(tab);
+  if(!root)return;
+
   document.querySelectorAll(`#${tab} .task-bar`).forEach(bar=>{
     const handle=bar.querySelector(".resize");
     const connectors=[...bar.querySelectorAll(".connector")];
@@ -1493,103 +1618,147 @@ function bindBars(tab){
     connectors.forEach(connector=>{
       connector.addEventListener("pointerdown",e=>{
         const rows=bar.closest(".task-rows");
-        const svg=rows?.querySelector(".dependency-layer");
-        if(!rows||!svg)return;
+        const timeline=bar.closest(".timeline");
+        if(!rows||!timeline)return;
+
         const rowsRect=rows.getBoundingClientRect();
         const cr=connector.getBoundingClientRect();
         const sx=cr.left-rowsRect.left+cr.width/2;
         const sy=cr.top-rowsRect.top+cr.height/2;
+
         connecting={
           tab,
           sourceId:bar.dataset.id,
           fromSide:connector.dataset.side,
-          startX:sx,startY:sy,
-          pointerId:e.pointerId,
+          startX:sx,
+          startY:sy,
+          startClientX:e.clientX,
+          startClientY:e.clientY,
           moved:false
         };
+
+        timeline.classList.add("connecting-active");
         connector.classList.add("active");
-        connector.setPointerCapture(e.pointerId);
         drawConnectPreview(tab,sx,sy,sx,sy);
+
+        const onMove=ev=>{
+          if(!connecting || connecting.tab!==tab)return;
+          const rr=rows.getBoundingClientRect();
+          const x=ev.clientX-rr.left;
+          const y=ev.clientY-rr.top;
+
+          if(
+            Math.abs(ev.clientX-connecting.startClientX)>4 ||
+            Math.abs(ev.clientY-connecting.startClientY)>4
+          ){
+            connecting.moved=true;
+          }
+
+          drawConnectPreview(tab,connecting.startX,connecting.startY,x,y);
+          ev.preventDefault();
+        };
+
+        const cleanup=()=>{
+          document.removeEventListener("pointermove",onMove,true);
+          document.removeEventListener("pointerup",onUp,true);
+          document.removeEventListener("pointercancel",onCancel,true);
+          connector.classList.remove("active");
+          timeline.classList.remove("connecting-active");
+          clearConnectPreview(tab);
+        };
+
+        const onCancel=()=>{
+          cleanup();
+          connecting=null;
+        };
+
+        const onUp=ev=>{
+          if(!connecting || connecting.tab!==tab){
+            cleanup();
+            return;
+          }
+
+          const source={...connecting};
+          /*
+            IMPORTANT:
+            Destination connectors stay visible for the whole drag because
+            .connecting-active remains applied until AFTER elementFromPoint().
+            This makes the destination dot a reliable drop target.
+          */
+          const hit=document.elementFromPoint(ev.clientX,ev.clientY);
+          const target=hit?.closest?.(".connector");
+
+          cleanup();
+          connecting=null;
+
+          if(!source.moved){
+            openConnectModal(tab,source.sourceId);
+            return;
+          }
+
+          if(!target){
+            return;
+          }
+
+          const targetBar=target.closest(".task-bar");
+          const targetId=targetBar?.dataset.id;
+          if(!targetId || targetId===source.sourceId){
+            alert("Drop the connector onto a different activity.");
+            return;
+          }
+
+          const type=relationFromSides(source.fromSide,target.dataset.side);
+          if(!type){
+            alert("Start → Finish would be an SF relationship. This lab supports FS, SS and FF only.");
+            return;
+          }
+
+          createDependency(tab,source.sourceId,targetId,type,0);
+        };
+
+        document.addEventListener("pointermove",onMove,true);
+        document.addEventListener("pointerup",onUp,true);
+        document.addEventListener("pointercancel",onCancel,true);
+
         e.stopPropagation();
         e.preventDefault();
-      });
-
-      connector.addEventListener("pointermove",e=>{
-        if(!connecting || connecting.pointerId!==e.pointerId)return;
-        const rows=bar.closest(".task-rows");
-        if(!rows)return;
-        const rr=rows.getBoundingClientRect();
-        const x=e.clientX-rr.left;
-        const y=e.clientY-rr.top;
-        if(Math.abs(x-connecting.startX)>4 || Math.abs(y-connecting.startY)>4) connecting.moved=true;
-        drawConnectPreview(tab,connecting.startX,connecting.startY,x,y);
-        e.stopPropagation();
-      });
-
-      connector.addEventListener("pointerup",e=>{
-        if(!connecting || connecting.pointerId!==e.pointerId)return;
-        const source={...connecting};
-        connector.classList.remove("active");
-        clearConnectPreview(tab);
-
-        const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.(".connector");
-        connecting=null;
-
-        if(!source.moved){
-          openConnectModal(tab,source.sourceId);
-          e.stopPropagation();
-          return;
-        }
-
-        if(!target){
-          e.stopPropagation();
-          return;
-        }
-
-        const targetBar=target.closest(".task-bar");
-        const targetId=targetBar?.dataset.id;
-        if(!targetId || targetId===source.sourceId){
-          alert("Drop the connector onto a different activity.");
-          e.stopPropagation();
-          return;
-        }
-
-        const type=relationFromSides(source.fromSide,target.dataset.side);
-        if(!type){
-          alert("Start → Finish would be an SF relationship. This lab supports FS, SS and FF only.");
-          e.stopPropagation();
-          return;
-        }
-        createDependency(tab,source.sourceId,targetId,type,0);
-        e.stopPropagation();
       });
     });
 
     bar.addEventListener("pointerdown",e=>{
       if(e.target===handle || e.target.closest?.(".connector"))return;
       const task=state[tab].tasks.find(t=>t.id===bar.dataset.id);
+      if(!task)return;
       dragInfo={tab,id:task.id,startX:e.clientX,origStart:task.start};
       bar.setPointerCapture(e.pointerId);
       e.preventDefault();
     });
+
     handle.addEventListener("pointerdown",e=>{
       const task=state[tab].tasks.find(t=>t.id===bar.dataset.id);
+      if(!task)return;
       resizeInfo={tab,id:task.id,startX:e.clientX,origDuration:task.duration};
       handle.setPointerCapture(e.pointerId);
-      e.stopPropagation(); e.preventDefault();
+      e.stopPropagation();
+      e.preventDefault();
     });
+
     bar.addEventListener("pointermove",e=>{
       const ww=WEEK_WIDTH();
+
       if(dragInfo && dragInfo.id===bar.dataset.id){
         const task=state[tab].tasks.find(t=>t.id===dragInfo.id);
+        if(!task)return;
         const delta=Math.round((e.clientX-dragInfo.startX)/ww);
         const weeks=state[tab].weeks||8;
         task.start=clamp(dragInfo.origStart+delta,1,weeks-task.duration+1);
         bar.style.left=`calc((var(--week-width)) * ${task.start-1})`;
         drawDependencies(tab);
       }
+
       if(resizeInfo && resizeInfo.id===bar.dataset.id){
         const task=state[tab].tasks.find(t=>t.id===resizeInfo.id);
+        if(!task)return;
         const delta=Math.round((e.clientX-resizeInfo.startX)/ww);
         const weeks=state[tab].weeks||8;
         task.duration=clamp(resizeInfo.origDuration+delta,1,weeks-task.start+1);
@@ -1597,11 +1766,19 @@ function bindBars(tab){
         drawDependencies(tab);
       }
     });
+
     const end=()=>{
-      if(dragInfo||resizeInfo){ dragInfo=null; resizeInfo=null; render(tab); }
+      if(dragInfo||resizeInfo){
+        dragInfo=null;
+        resizeInfo=null;
+        render(tab);
+      }
     };
+
     bar.addEventListener("pointerup",end);
     handle.addEventListener("pointerup",end);
+    bar.addEventListener("pointercancel",end);
+    handle.addEventListener("pointercancel",end);
   });
 }
 
@@ -1634,7 +1811,7 @@ function applyTaskModal(){
 
 function printProject(){
   if(currentTab==="raci") buildRaciPrintBook(raciSource);
-  else buildPrintBook(currentTab);
+  else buildPrintBook(ganttSource);
   window.print();
 }
 
@@ -1643,6 +1820,7 @@ function buildRaciPrintBook(source){
   ensureRaciState();
   const project=state[source];
   const raci=state.raci[source];
+  const stats=getRaciStats(source);
   const book=document.getElementById("printBook");
   if(!book)return;
 
@@ -1667,6 +1845,18 @@ function buildRaciPrintBook(source){
     taskGroups.push([]);
   }
 
+  const taskCount=project.tasks.length;
+  const coverageClass=covered=>{
+    if(taskCount===0)return "neutral";
+    if(covered===taskCount)return "good";
+    if(covered===0)return "bad";
+    return "warn";
+  };
+
+  const responsibleClass=coverageClass(stats.withR);
+  const accountableClass=coverageClass(stats.withA);
+  const multiAClass=taskCount===0 ? "neutral" : (stats.multiA===0 ? "good" : "bad");
+
   const totalPages=roleGroups.length*taskGroups.length;
   let page=0;
   const pages=[];
@@ -1674,13 +1864,16 @@ function buildRaciPrintBook(source){
   roleGroups.forEach((roles,ri)=>{
     taskGroups.forEach((tasks,ti)=>{
       page++;
+
       const headRoles=roles.map(r=>`<th>${escapeHtml(r.name)}</th>`).join("");
+
       const body=tasks.length ? tasks.map(task=>`
         <tr>
           <td>${escapeHtml(task.name)}</td>
           ${roles.map(role=>{
             const v=raci.assignments[raciKey(task.id,role.id)]||"";
-            return `<td class="raci-val">${escapeHtml(v||"—")}</td>`;
+            const cls=v ? `r-${v}` : "r-empty";
+            return `<td class="raci-val ${cls}">${escapeHtml(v||"—")}</td>`;
           }).join("")}
         </tr>`).join("") :
         `<tr><td colspan="${Math.max(1,roles.length+1)}">No activities</td></tr>`;
@@ -1688,6 +1881,22 @@ function buildRaciPrintBook(source){
       const roleRange=roles.length
         ? `Roles ${ri*ROLES_PER_PAGE+1}–${ri*ROLES_PER_PAGE+roles.length} of ${raci.roles.length}`
         : "No roles";
+
+      const summary=(ri===0 && ti===0) ? `
+        <div class="print-raci-summary">
+          <div class="print-raci-status ${responsibleClass}">
+            <strong>Responsible coverage</strong>
+            ${stats.withR}/${taskCount} activities have at least one R.
+          </div>
+          <div class="print-raci-status ${accountableClass}">
+            <strong>Accountability coverage</strong>
+            ${stats.withA}/${taskCount} activities have at least one A.
+          </div>
+          <div class="print-raci-status ${multiAClass}">
+            <strong>Multiple A check</strong>
+            ${stats.multiA===0 ? "No activity has multiple A assignments." : `${stats.multiA} activit${stats.multiA===1?"y has":"ies have"} multiple A assignments.`}
+          </div>
+        </div>` : "";
 
       pages.push(`<section class="print-sheet">
         <div class="print-sheet-head">
@@ -1697,11 +1906,20 @@ function buildRaciPrintBook(source){
             ${roleRange} · Page ${page}/${totalPages}
           </div>
         </div>
+
         <table class="print-raci">
           <thead><tr><th>Activity</th>${headRoles}</tr></thead>
           <tbody>${body}</tbody>
         </table>
-        <div class="print-dep-note">R = Responsible · A = Accountable · C = Consulted · I = Informed</div>
+
+        <div class="print-raci-legend">
+          <span class="print-raci-chip R"><b>R</b> Responsible</span>
+          <span class="print-raci-chip A"><b>A</b> Accountable</span>
+          <span class="print-raci-chip C"><b>C</b> Consulted</span>
+          <span class="print-raci-chip I"><b>I</b> Informed</span>
+        </div>
+
+        ${summary}
       </section>`);
     });
   });
@@ -1846,7 +2064,7 @@ function buildPrintBook(tab){
 
 window.addEventListener("beforeprint",()=>{
   if(currentTab==="raci") buildRaciPrintBook(raciSource);
-  else buildPrintBook(currentTab);
+  else buildPrintBook(ganttSource);
 });
 window.addEventListener("afterprint",()=>{
   const book=document.getElementById("printBook");
@@ -1867,7 +2085,7 @@ function loadAll(){
     if(!state.lab.weeks) state.lab.weeks=8;
     ensureRaciState();
     if(currentTab==="raci") renderRaci(raciSource);
-    else render(currentTab);
+    else setGanttSource(ganttSource);
   }catch(e){ alert("Saved data could not be loaded."); }
 }
 
@@ -1891,7 +2109,6 @@ window.addEventListener("resize",()=>{
 
 ensureRaciState();
 render("seminar");
-render("lab");
 renderRaci("seminar");
 </script>
 </body>
